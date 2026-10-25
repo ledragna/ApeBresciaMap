@@ -21,7 +21,7 @@
   .group small { font-weight: 400; text-transform: none; letter-spacing: 0; }
   .group small a { color: #06c; cursor: pointer; margin-left: 6px; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-  .chip { border: 1px solid #bbb; background: #fff; color: #888; border-radius: 12px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 12px; }
+  .chip { border: 1px solid #bbb; background: #fff; color: #333; border-radius: 12px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 12px; }
   .chip.on { background: #223; color: #fff; border-color: #223; }
   input[type=search], input[type=number], select { font: inherit; padding: 4px 6px; border: 1px solid #bbb; border-radius: 4px; box-sizing: border-box; }
   input[type=search] { width: 100%; }
@@ -92,12 +92,12 @@
     <div id="filters">
 
     <div class="group">Cerca</div>
-    <input type="search" id="q" placeholder="name, place...">
+    <input type="search" id="q" placeholder="luogo, tag...">
 
-    <div class="group">Anno <small><a data-all="years">all</a><a data-none="years">none</a></small></div>
+    <div class="group">Anno <small><a data-reset="years">rimuovi filtri</a></small></div>
     <div class="chips" id="chips-years"></div>
 
-    <div class="group">Difficoltà (APE) <small><a data-all="diffs">all</a><a data-none="diffs">none</a></small></div>
+    <div class="group">Difficoltà (APE) <small><a data-reset="diffs">rimuovi filtri</a></small></div>
     <div class="chips" id="chips-diffs"></div>
 
     <div class="group">Distanza (km)</div>
@@ -157,7 +157,7 @@ const numYears = HIKES.map(h => h.year).filter(y => y != null);
 const yMin = Math.min(...numYears), yMax = Math.max(...numYears);
 
 const state = {
-  years: new Set(yearKeys), diffs: new Set(diffKeys),
+  years: new Set(), diffs: new Set(),   // empty set = filter inactive
   q: '', km: [null, null], up: [null, null],
   cluster: true, group: true, gpxOnly: false, color: 'year'
 };
@@ -165,8 +165,8 @@ const state = {
 const review = { on: false, cur: null, all: false, history: [], msg: '' };
 
 function passes(h) {
-  if (!state.years.has(yk(h))) return false;
-  if (!state.diffs.has(h.diffLabel)) return false;
+  if (state.years.size && !state.years.has(yk(h))) return false;
+  if (state.diffs.size && !state.diffs.has(h.diffLabel)) return false;
   if (state.gpxOnly && !h.tracks.length) return false;
   if (state.q) {
     const hay = (h.name + ' ' + h.tags + ' ' + h.match).toLowerCase();
@@ -431,7 +431,7 @@ function buildChips(el, keys, set) {
   el.innerHTML = '';
   keys.forEach(k => {
     const b = document.createElement('button');
-    b.className = 'chip on'; b.textContent = k; b.dataset.k = k;
+    b.className = 'chip'; b.textContent = k; b.dataset.k = k;
     b.onclick = () => { set.has(k) ? set.delete(k) : set.add(k); b.classList.toggle('on', set.has(k)); render(); };
     el.appendChild(b);
   });
@@ -439,12 +439,10 @@ function buildChips(el, keys, set) {
 buildChips($('chips-years'), yearKeys, state.years);
 buildChips($('chips-diffs'), diffKeys, state.diffs);
 
-document.querySelectorAll('[data-all],[data-none]').forEach(a => a.onclick = () => {
-  const which = a.dataset.all || a.dataset.none, on = !!a.dataset.all;
-  const set = which === 'years' ? state.years : state.diffs;
-  const keys = which === 'years' ? yearKeys : diffKeys;
-  set.clear(); if (on) keys.forEach(k => set.add(k));
-  document.querySelectorAll(`#chips-${which} .chip`).forEach(b => b.classList.toggle('on', on));
+document.querySelectorAll('[data-reset]').forEach(a => a.onclick = () => {
+  const which = a.dataset.reset;
+  (which === 'years' ? state.years : state.diffs).clear();
+  document.querySelectorAll(`#chips-${which} .chip`).forEach(b => b.classList.remove('on'));
   render();
 });
 
@@ -678,7 +676,7 @@ $('rev-reset').onclick = () => {
   }
 };
 
-$('subtitle').textContent = `${HIKES.length} hikes` + (numYears.length ? `, ${yMin}\u2013${yMax}` : '');
+$('subtitle').textContent = `${HIKES.length} escursioni` + (numYears.length ? `, ${yMin}\u2013${yMax}` : '');
 render();
 fitResults();
 </script>
