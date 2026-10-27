@@ -169,7 +169,7 @@ function expandEvents(events) {
       const own = l.pos ? { lat: l.pos[0], lon: l.pos[1], src: 'manual', q: 'exact', match: '', query: '' } : place;
       out.push(hike(l, {
         name: l.leg ? `${e.name} \u2013 ${l.leg}` : e.name, ...own, key: `${e.key}-${l.n}`, leg: l.leg || '',
-        eventName: e.name, ownPos: !!l.own,
+        eventName: e.name, ownPos: !!l.own, info: l.info || '',
         evLat: place.lat, evLon: place.lon, evQ: place.q, evSrc: place.src, evMatch: place.match, evQuery: place.query
       }));
     });
@@ -350,10 +350,12 @@ function groupPopupHtml(g) {
   const act = (g._tab != null && g._tab < g.legs.length) ? g._tab : firstMatching;     // remembers the last tab used
   const tabs = g.legs.map((l, n) =>
     `<button class="gtab${n === act ? ' on' : ''}${passes(l) ? '' : ' dim'}" data-g="${esc(g.key)}" data-n="${n}">${esc(l.leg)}</button>`).join('');
+  const multiDay = new Set(g.legs.map(l => l.date)).size > 1;
   const panels = g.legs.map((l, n) => {
     const own = g.lat != null && l.lat != null && (Math.abs(l.lat - g.lat) > 0.001 || Math.abs(l.lon - g.lon) > 0.001);
     return `<div class="gpanel" style="${n === act ? '' : 'display:none'}">
-      <span class="muted">${esc(l.date)}</span>
+      ${l.info ? `<div><b>${esc(l.info)}</b></div>` : ''}
+      ${multiDay ? `<span class="muted">${esc(l.date)}</span>` : ''}
       <div>${statsOf(l) || '<span class="muted">dati da inserire</span>'}</div>
       ${tracksHtml(l, true)}
       ${own ? `<div class="muted">parte da un altro punto &middot; <a href="#" class="ungroup" data-i="${l.i}">mostra come pin separato</a></div>` : ''}</div>`;
