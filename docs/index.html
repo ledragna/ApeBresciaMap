@@ -13,7 +13,15 @@
   #app { display: flex; height: 100%; }
   #panel { width: 340px; flex: none; overflow: auto; padding: 12px 14px; box-sizing: border-box;
            border-right: 1px solid #ddd; background: #fafafa; }
+  #main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
   #map { flex: 1; min-width: 0; min-height: 0; }
+  #prof { flex: none; height: 210px; box-sizing: border-box; border-top: 1px solid #ddd; background: #fff; padding: 6px 12px 4px; display: none; }
+  #prof .ph { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+  #prof .pt { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #prof .ps { font-size: 12px; color: #444; }
+  #prof .pc { border: 0; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: #555; }
+  #pgraph { height: 160px; touch-action: none; }
+  #pgraph svg { display: block; cursor: crosshair; }
   h1 { font-size: 18px; margin: 0 0 2px; }
   .muted { color: #777; font-size: 12px; }
   .group { margin: 12px 0 4px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555;
@@ -66,7 +74,9 @@
   @media (max-width: 800px) {
     #app { flex-direction: column-reverse; }
     #panel { width: auto; height: 45%; border-right: 0; border-top: 1px solid #ddd; }
-    #map { height: 55%; }
+    #main { height: 55%; flex: none; }
+    #prof { height: 180px; }
+    #pgraph { height: 130px; }
   }
 </style>
 <meta name="robots" content="noindex, nofollow">
@@ -124,7 +134,14 @@
     <div id="status"></div>
     <ul id="list"></ul>
   </aside>
-  <div id="map"></div>
+  <div id="main">
+    <div id="map"></div>
+    <div id="prof">
+      <div class="ph"><span class="pt" id="ptitle"></span><button class="pc" id="pclose" title="Chiudi">&times;</button></div>
+      <div class="ps" id="pstats"></div>
+      <div id="pgraph"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -323,6 +340,7 @@ function tracksHtml(h, hideSameEvent) {
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px">
         <a style="text-decoration:none;color:inherit;padding:2px 8px;border:1px solid #bbb;border-radius:4px;background:#fff" href="${esc(t.f)}" download>&#11015; GPX</a>
         ${onDisk ? '' : `<button class="act gpx-show" data-f="${esc(t.f)}" data-k="${esc(t.k)}">Mostra</button>`}
+        ${onDisk || !t.e ? '' : `<button class="act gpx-prof" data-f="${esc(t.f)}" data-k="${esc(t.k)}" data-n="${esc(h.name + ' \u2013 ' + (t.l || TRACK_KIND[t.k] || TRACK_KIND.track))}">Profilo</button>`}
       </div>
       ${others.length ? `<div class="muted">Stesso file anche: ${others.slice(0, 8).map(o => `<a href="#" class="goto" data-i="${o.i}">${esc(o.date || o.name)}</a>`).join(', ')}${others.length > 8 ? '&hellip;' : ''}</div>` : ''}</div>`;
   }).join('');
@@ -524,16 +542,22 @@ $('list').onclick = e => {
 const trackLayer = L.featureGroup().addTo(map);
 const trackPts = {};      // file -> [[lat, lon], ...]   (one download per file, however many hikes share it)
 const trackLines = {};    // file|kind -> polyline
+const trackDocs = {};     // file -> parsed GPX (shared by "Mostra" and "Profilo")
 const trackStyle = k => k === 'route'
   ? { color: '#1f4fd8', weight: 4, opacity: 0.9, dashArray: '8 6' }      // drawn route: dashed blue
   : { color: '#d62728', weight: 4, opacity: 0.85 };                      // recorded / neutral: solid red
 const isShown = (f, k) => !!trackLines[f + '|' + k] && trackLayer.hasLayer(trackLines[f + '|' + k]);
 
-async function trackPoints(f) {
-  if (trackPts[f]) return trackPts[f];
+async function trackXml(f) {
+  if (trackDocs[f]) return trackDocs[f];
   const r = await fetch(f);
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  const xml = new DOMParser().parseFromString(await r.text(), 'application/xml');
+  return (trackDocs[f] = new DOMParser().parseFromString(await r.text(), 'application/xml'));
+}
+
+async function trackPoints(f) {
+  if (trackPts[f]) return trackPts[f];
+  const xml = await trackXml(f);
   let pts = [...xml.getElementsByTagName('trkpt')];
   if (!pts.length) pts = [...xml.getElementsByTagName('rtept')];
   const ll = pts.map(p => [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))])
@@ -564,6 +588,8 @@ document.addEventListener('click', e => {
   if (!t || !t.closest) return;
   const b = t.closest('.gpx-show');
   if (b) { toggleTrack(b.dataset.f, b.dataset.k, b); return; }
+  const pb = t.closest('.gpx-prof');
+  if (pb) { openProfile(pb); return; }
   const g = t.closest('.goto');                       // "same file also: 2019-03-31" -> jump to that hike
   if (g) {
     e.preventDefault();
@@ -595,6 +621,126 @@ function syncTrackButtons(el) {                       // keep the button labels 
 }
 map.on('popupopen', e => syncTrackButtons(e.popup.getElement()));
 $('clear-tracks').onclick = () => { trackLayer.clearLayers(); $('clear-tracks').style.display = 'none'; };
+
+// ---- elevation profile (distance / elevation measured on the GPX, in the browser) --------------
+const ASCENT_THRESHOLD_M = 3;     // same rule as ascent_m in clean_gpx.py
+let prof = null;                  // { pts: [{d, e, ll}], x0, x1, y0, y1, ... } of the open profile
+let profMarker = null;
+
+const haversine = (a, b) => {
+  const r = Math.PI / 180, dl = (b[0] - a[0]) * r, dn = (b[1] - a[1]) * r;
+  const h = Math.sin(dl / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dn / 2) ** 2;
+  return 2 * 6371008.8 * Math.asin(Math.sqrt(h));
+};
+
+// Points with elevation, all segments joined on one distance axis. Recorded <trk> wins over a <rte>.
+async function profilePoints(f) {
+  const xml = await trackXml(f);
+  const withEle = tag => [...xml.getElementsByTagName(tag)].filter(p => p.getElementsByTagName('ele').length);
+  let els = withEle('trkpt');
+  if (!els.length) els = withEle('rtept');
+  const pts = [];
+  let d = 0;
+  els.forEach(p => {
+    const ll = [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))];
+    const e = parseFloat(p.getElementsByTagName('ele')[0].textContent);
+    if (!isFinite(ll[0]) || !isFinite(ll[1]) || !isFinite(e)) return;
+    if (pts.length) d += haversine(pts[pts.length - 1].ll, ll);
+    pts.push({ d, e, ll });
+  });
+  if (pts.length < 2) throw new Error('no elevation');
+  return pts;
+}
+
+function profileStats(pts) {
+  let up = 0, down = 0, ref = pts[0].e, lo = ref, hi = ref;
+  pts.forEach(p => {
+    if (p.e - ref >= ASCENT_THRESHOLD_M) { up += p.e - ref; ref = p.e; }
+    else if (ref - p.e >= ASCENT_THRESHOLD_M) { down += ref - p.e; ref = p.e; }
+    lo = Math.min(lo, p.e); hi = Math.max(hi, p.e);
+  });
+  return { km: pts[pts.length - 1].d / 1000, up, down, lo, hi };
+}
+
+const niceStep = (range, n) => {
+  const raw = range / n, m = 10 ** Math.floor(Math.log10(raw)), f = raw / m;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * m;
+};
+
+function drawProfile() {
+  if (!prof) return;
+  const box = $('pgraph'), W = box.clientWidth, H = box.clientHeight;
+  if (W < 50 || H < 50) return;
+  const { pts, st } = prof, L_ = 44, R_ = 8, T_ = 6, B_ = 20;
+  const dmax = pts[pts.length - 1].d;
+  const ys = niceStep(st.hi - st.lo || 10, 4);
+  const y0 = Math.floor(st.lo / ys) * ys, y1 = Math.ceil(st.hi / ys) * ys || y0 + ys;
+  const X = d => L_ + d / dmax * (W - L_ - R_), Y = e => T_ + (1 - (e - y0) / (y1 - y0)) * (H - T_ - B_);
+  Object.assign(prof, { W, H, L_, R_, dmax, X });
+  let g = '';
+  for (let v = y0; v <= y1 + 1e-6; v += ys)
+    g += `<line x1="${L_}" x2="${W - R_}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e5e5e5"/><text x="${L_ - 4}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#666">${Math.round(v)}</text>`;
+  const xs = niceStep(dmax / 1000, Math.max(2, Math.floor(W / 90)));
+  for (let v = 0; v * 1000 <= dmax + 1e-6; v += xs)
+    g += `<text x="${X(v * 1000)}" y="${H - 5}" text-anchor="middle" font-size="11" fill="#666">${+v.toFixed(2)} km</text>`;
+  const line = pts.map(p => `${X(p.d).toFixed(1)},${Y(p.e).toFixed(1)}`).join(' ');
+  g += `<polygon points="${X(0)},${Y(y0)} ${line} ${X(dmax)},${Y(y0)}" fill="#d6504f" fill-opacity=".18"/>`
+     + `<polyline points="${line}" fill="none" stroke="#d62728" stroke-width="1.6"/>`
+     + `<g id="pcur" style="display:none"><line y1="${T_}" y2="${H - B_}" stroke="#223"/><circle r="4" fill="#223"/>`
+     + `<text font-size="12" fill="#223" font-weight="600"></text></g>`;
+  box.innerHTML = `<svg width="${W}" height="${H}">${g}</svg>`;
+  prof.Y = Y;
+  const svg = box.firstChild, cur = svg.querySelector('#pcur');
+  const move = ev => {
+    const x = ev.clientX - svg.getBoundingClientRect().left;
+    const d = Math.max(0, Math.min(dmax, (x - L_) / (W - L_ - R_) * dmax));
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (pts[m].d < d) lo = m + 1; else hi = m; }
+    if (lo > 0 && d - pts[lo - 1].d < pts[lo].d - d) lo--;
+    const p = pts[lo], px = X(p.d);
+    cur.style.display = '';
+    cur.querySelector('line').setAttribute('x1', px); cur.querySelector('line').setAttribute('x2', px);
+    cur.querySelector('circle').setAttribute('cx', px); cur.querySelector('circle').setAttribute('cy', Y(p.e));
+    const tx = cur.querySelector('text');
+    tx.textContent = `${(p.d / 1000).toFixed(2)} km \u00b7 ${Math.round(p.e)} m`;
+    tx.setAttribute('x', px > W / 2 ? px - 6 : px + 6); tx.setAttribute('text-anchor', px > W / 2 ? 'end' : 'start');
+    tx.setAttribute('y', T_ + 12);
+    if (!profMarker) profMarker = L.circleMarker(p.ll, { radius: 7, color: '#fff', weight: 2, fillColor: '#223', fillOpacity: 1, interactive: false }).addTo(map);
+    else profMarker.setLatLng(p.ll);
+  };
+  const leave = () => { cur.style.display = 'none'; if (profMarker) { profMarker.remove(); profMarker = null; } };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', leave);
+}
+new ResizeObserver(drawProfile).observe($('pgraph'));
+
+async function openProfile(btn) {
+  const f = btn.dataset.f, k = btn.dataset.k;
+  try {
+    const pts = await profilePoints(f);
+    const st = profileStats(pts);
+    prof = { pts, st };
+    $('ptitle').textContent = btn.dataset.n;
+    $('pstats').innerHTML = `${st.km.toFixed(1)} km &middot; ${Math.round(st.up)} m &uarr; &middot; ${Math.round(st.down)} m &darr; &middot; `
+      + `min ${Math.round(st.lo)} m &middot; max ${Math.round(st.hi)} m <span class="muted">&middot; da traccia</span>`;
+    $('prof').style.display = 'block';
+    map.invalidateSize();
+    drawProfile();
+    const show = btn.parentElement.querySelector('.gpx-show');
+    if (show && !isShown(f, k)) await toggleTrack(f, k, show);
+  } catch (e) {
+    btn.textContent = 'Non disponibile'; btn.disabled = true;
+  }
+}
+function closeProfile() {
+  prof = null;
+  if (profMarker) { profMarker.remove(); profMarker = null; }
+  $('prof').style.display = 'none';
+  $('pgraph').innerHTML = '';
+  map.invalidateSize();
+}
+$('pclose').onclick = closeProfile;
 
 // ---- review mode: click the map to place / confirm a hike -------------------
 function setPos(h, lat, lon, grp) {
