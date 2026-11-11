@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="clean_gpx" xmlns="http://www.topografix.com/GPX/1/1">
+<trk>
+<trkseg>
+<trkpt lat="45.66617" lon="10.54656"><ele>570</ele></trkpt>
+<trkpt lat="45.66693" lon="10.54720"><ele>587</ele></trkpt>
+<trkpt lat="45.66739" lon="10.54725"><ele>594</ele></trkpt>
+<trkpt lat="45.66740" lon="10.54713"><ele>594</ele></trkpt>
+<trkpt lat="45.66774" lon="10.54727"><ele>599</ele></trkpt>
+<trkpt lat="45.66835" lon="10.54734"><ele>613</ele></trkpt>
+<trkpt lat="45.66893" lon="10.54806"><ele>627</ele></trkpt>
+<trkpt lat="45.66911" lon="10.54845"><ele>635</ele></trkpt>
+<trkpt lat="45.66974" lon="10.54917"><ele>651</ele></trkpt>
+<trkpt lat="45.67013" lon="10.54923"><ele>662</ele></trkpt>
+<trkpt lat="45.67067" lon="10.54958"><ele>676</ele></trkpt>
+<trkpt lat="45.67145" lon="10.54989"><ele>695</ele></trkpt>
+<trkpt lat="45.67162" lon="10.55008"><ele>699</ele></trkpt>
+<trkpt lat="45.67197" lon="10.55101"><ele>720</ele></trkpt>
+<trkpt lat="45.67224" lon="10.55122"><ele>721</ele></trkpt>
+<trkpt lat="45.67268" lon="10.55153"><ele>734</ele></trkpt>
+<trkpt lat="45.67302" lon="10.55155"><ele>743</ele></trkpt>
+<trkpt lat="45.67347" lon="10.55107"><ele>760</ele></trkpt>
+<trkpt lat="45.67393" lon="10.55095"><ele>762</ele></trkpt>
+<trkpt lat="45.67368" lon="10.55167"><ele>767</ele></trkpt>
+<trkpt lat="45.67333" lon="10.55241"><ele>796</ele></trkpt>
+<trkpt lat="45.67300" lon="10.55280"><ele>806</ele></trkpt>
+<trkpt lat="45.67292" lon="10.55307"><ele>810</ele></trkpt>
+<trkpt lat="45.67305" lon="10.55314"><ele>822</ele></trkpt>
+<trkpt lat="45.67342" lon="10.55293"><ele>824</ele></trkpt>
+<trkpt lat="45.67328" lon="10.55335"><ele>842</ele></trkpt>
+<trkpt lat="45.67316" lon="10.55350"><ele>843</ele></trkpt>
+<trkpt lat="45.67311" lon="10.55386"><ele>850</ele></trkpt>
+<trkpt lat="45.67325" lon="10.55432"><ele>863</ele></trkpt>
+<trkpt lat="45.67332" lon="10.55510"><ele>866</ele></trkpt>
+<trkpt lat="45.67378" lon="10.55552"><ele>892</ele></trkpt>
+<trkpt lat="45.67387" lon="10.55586"><ele>898</ele></trkpt>
+<trkpt lat="45.67390" lon="10.55555"><ele>902</ele></trkpt>
+<trkpt lat="45.67396" lon="10.55560"><ele>903</ele></trkpt>
+<trkpt lat="45.67412" lon="10.55612"><ele>911</ele></trkpt>
+<trkpt lat="45.67413" lon="10.55568"><ele>913</ele></trkpt>
+<trkpt lat="45.67489" lon="10.55743"><ele>960</ele></trkpt>
+<trkpt lat="45.67486" lon="10.55760"><ele>961</ele></trkpt>
+<trkpt lat="45.67501" lon="10.55767"><ele>966</ele></trkpt>
+<trkpt lat="45.67524" lon="10.55808"><ele>980</ele></trkpt>
+<trkpt lat="45.67573" lon="10.55831"><ele>998</ele></trkpt>
+<trkpt lat="45.67594" lon="10.55866"><ele>1009</ele></trkpt>
+<trkpt lat="45.67621" lon="10.55861"><ele>1021</ele></trkpt>
+<trkpt lat="45.67622" lon="10.55840"><ele>1024</ele></trkpt>
+<trkpt lat="45.67636" lon="10.55864"><ele>1029</ele></trkpt>
+<trkpt lat="45.67643" lon="10.55847"><ele>1033</ele></trkpt>
+<trkpt lat="45.67632" lon="10.55808"><ele>1044</ele></trkpt>
+<trkpt lat="45.67610" lon="10.55782"><ele>1047</ele></trkpt>
+<trkpt lat="45.67608" lon="10.55766"><ele>1048</ele></trkpt>
+<trkpt lat="45.67674" lon="10.55705"><ele>1097</ele></trkpt>
+<trkpt lat="45.67681" lon="10.55692"><ele>1097</ele></trkpt>
+<trkpt lat="45.67708" lon="10.55683"><ele>1117</ele></trkpt>
+<trkpt lat="45.67705" lon="10.55647"><ele>1126</ele></trkpt>
+<trkpt lat="45.67721" lon="10.55678"><ele>1144</ele></trkpt>
+<trkpt lat="45.67797" lon="10.55707"><ele>1158</ele></trkpt>
+</trkseg>
+</trk>
+<rte>
+<rtept lat="45.66617" lon="10.54656"></rtept>
+<rtept lat="45.66741" lon="10.54713"></rtept>
+<rtept lat="45.66836" lon="10.54736"></rtept>
+<rtept lat="45.67350" lon="10.55106"></rtept>
+<rtept lat="45.67615" lon="10.55791"></rtept>
+<rtept lat="45.67608" lon="10.55766"></rtept>
+<rtept lat="45.67625" lon="10.55756"></rtept>
+<rtept lat="45.67681" lon="10.55692"></rtept>
+<rtept lat="45.67708" lon="10.55683"></rtept>
+<rtept lat="45.67705" lon="10.55647"></rtept>
+<rtept lat="45.67721" lon="10.55677"></rtept>
+<rtept lat="45.67797" lon="10.55707"></rtept>
+</rte>
+</gpx>
